@@ -1,0 +1,113 @@
+#---
+# PostgreSQL Persistent Volume
+# apiVersion: v1
+# kind: PersistentVolume
+# metadata:
+#   name: postgres-pv
+#   namespace: restaurant-test
+#   labels:
+#     app: postgres
+# spec:
+#   storageClassName: longhorn
+#   capacity:
+#     storage: 10Gi
+#   accessModes:
+#     - ReadWriteOnce
+
+#---
+# PostgreSQL Persistent Volume Claim
+# Note: StatefulSet creates its own PVC (postgres-storage-postgres-0) with standard storage class
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: postgres-pvc
+#   namespace: restaurant-test
+# spec:
+#   storageClassName: longhorn
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 10Gi
+
+# ---
+# # Redis Persistent Volume
+# apiVersion: v1
+# kind: PersistentVolume
+# metadata:
+#   name: redis-pv
+#   namespace: restaurant-test
+#   labels:
+#     app: redis
+# spec:
+#   storageClassName: longhorn
+#   capacity:
+#     storage: 5Gi
+#   accessModes:
+#     - ReadWriteOnce
+
+#---
+# Redis Persistent Volume Claim
+# Note: StatefulSet creates its own PVC (redis-storage-redis-0) with standard storage class
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: redis-pvc
+#   namespace: restaurant-test
+# spec:
+#   storageClassName: longhorn
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 5Gi
+
+# ---
+# # RabbitMQ Persistent Volume
+# apiVersion: v1
+# kind: PersistentVolume
+# metadata:
+#   name: rabbitmq-pv
+#   namespace: restaurant-test
+#   labels:
+#     app: rabbitmq
+# spec:
+#   storageClassName: longhorn
+#   capacity:
+#     storage: 5Gi
+#   accessModes:
+#     - ReadWriteOnce
+
+#---
+# RabbitMQ Persistent Volume Claim
+# Note: StatefulSet creates its own PVC (rabbitmq-storage-rabbitmq-0) with standard storage class
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: rabbitmq-pvc
+#   namespace: restaurant-test
+# spec:
+#   storageClassName: longhorn
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 5Gi
+
+---
+# Restaurant Service Uploads Persistent Volume Claim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: restaurant-uploads-pvc
+  namespace: restaurant-test
+  labels:
+    app: restaurant-service
+spec:
+  storageClassName: standard
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+

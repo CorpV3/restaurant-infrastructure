@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: restaurant-config
+  namespace: restaurant-test
+data:
+  # Database Configuration
+  POSTGRES_DB: "restaurant_db"
+  DATABASE_URL: "postgresql://restaurant_admin:restaurant_pass_2024@postgres-service:5432/restaurant_db"
+
+  # Redis Configuration
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+
+  # RabbitMQ Configuration
+  RABBITMQ_HOST: "rabbitmq-service"
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_VHOST: "/"
+
+  # JWT Configuration
+  JWT_ALGORITHM: "HS256"
+  ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+  REFRESH_TOKEN_EXPIRE_DAYS: "7"
+
+  # Service Ports (using APP_ prefix to avoid K8s auto-injected env vars)
+  APP_AUTH_SERVICE_PORT: "8001"
+  APP_MASTER_ADMIN_SERVICE_PORT: "8002"
+  APP_RESTAURANT_SERVICE_PORT: "8003"
+  APP_ORDER_SERVICE_PORT: "8004"
+  APP_KITCHEN_SERVICE_PORT: "8005"
+  APP_NOTIFICATION_SERVICE_PORT: "8006"
+  APP_API_GATEWAY_PORT: "8000"
+
+  # CORS
+  CORS_ORIGINS: "http://localhost:3000,http://localhost:5173,https://restaurant.corpv3.com"
+
+  # Environment
+  ENVIRONMENT: "production"
+
+  # File Upload
+  MAX_UPLOAD_SIZE: "5242880"
+  UPLOAD_DIR: "/uploads"
+
+  # QR Code Configuration
+  QR_CODE_BASE_URL: "https://restaurant.corpv3.com/table"
+  QR_CODE_SIZE: "300"
+  QR_CODE_ERROR_CORRECTION: "M"
+
+  # Logging
+  LOG_LEVEL: "INFO"
+  LOG_FORMAT: "json"
+
+  # Rate Limiting
+  RATE_LIMIT_PER_MINUTE: "100"
+
+  # Session
+  SESSION_EXPIRE_HOURS: "24"

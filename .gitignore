@@ -1,0 +1,15 @@
+# Local secrets (don't commit actual secrets)
+*.secret
+*.key
+
+# Temporary files
+*.tmp
+*.bak
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

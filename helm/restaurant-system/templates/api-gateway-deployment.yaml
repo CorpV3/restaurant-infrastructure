@@ -40,6 +40,18 @@ spec:
             configMapKeyRef:
               name: restaurant-config
               key: RESTAURANT_SERVICE_URL
+        - name: ORDER_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: restaurant-config
+              key: ORDER_SERVICE_URL
+        - name: CUSTOMER_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: restaurant-config
+              key: CUSTOMER_SERVICE_URL
+        - name: INTEGRATION_SERVICE_URL
+          value: "http://integration-service:8015"
         - name: POS_SERVICE_URL
           valueFrom:
             configMapKeyRef:

@@ -17,7 +17,7 @@ apiGateway:
   replicaCount: 1
   image:
     repository: shadrach85/api-gateway
-    tag: 739884b
+    tag: latest
     pullPolicy: Always
   service:
     type: ClusterIP
@@ -50,7 +50,7 @@ authService:
   replicaCount: 1
   image:
     repository: shadrach85/auth-service
-    tag: a8917f7
+    tag: cd108b8
     pullPolicy: Always
   service:
     type: ClusterIP
@@ -75,7 +75,7 @@ restaurantService:
   replicaCount: 1
   image:
     repository: shadrach85/restaurant-service
-    tag: b08c38b
+    tag: 030708d
     pullPolicy: Always
   service:
     type: ClusterIP
@@ -128,7 +128,7 @@ customerService:
   replicaCount: 1
   image:
     repository: shadrach85/customer-service
-    tag: 739884b
+    tag: latest
     pullPolicy: Always
   service:
     type: ClusterIP

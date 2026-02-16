@@ -1,0 +1,75 @@
+{{- if .Values.integrationService.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.integrationService.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.integrationService.name }}
+spec:
+  replicas: {{ .Values.integrationService.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.integrationService.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.integrationService.name }}
+    spec:
+      containers:
+      - name: integration-service
+        image: "{{ .Values.integrationService.image.repository }}:{{ .Values.integrationService.image.tag }}"
+        imagePullPolicy: {{ .Values.integrationService.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.integrationService.service.port }}
+          name: http
+        env:
+        - name: ORDER_SERVICE_URL
+          value: {{ .Values.integrationService.env.ORDER_SERVICE_URL | quote }}
+        - name: DEFAULT_RESTAURANT_ID
+          value: {{ .Values.integrationService.env.DEFAULT_RESTAURANT_ID | quote }}
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: restaurant-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: restaurant-secrets
+              key: POSTGRES_PASSWORD
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: restaurant-config
+              key: DATABASE_URL
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: restaurant-secrets
+              key: JWT_SECRET_KEY
+        - name: ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: restaurant-config
+              key: ENVIRONMENT
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: restaurant-config
+              key: LOG_LEVEL
+        resources:
+          {{- toYaml .Values.integrationService.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+{{- end }}

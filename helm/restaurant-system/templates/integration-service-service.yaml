@@ -1,0 +1,18 @@
+{{- if .Values.integrationService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.integrationService.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.integrationService.name }}
+spec:
+  type: {{ .Values.integrationService.service.type }}
+  ports:
+  - port: {{ .Values.integrationService.service.port }}
+    targetPort: {{ .Values.integrationService.service.port }}
+    protocol: TCP
+    name: http
+  selector:
+    app: {{ .Values.integrationService.name }}
+{{- end }}

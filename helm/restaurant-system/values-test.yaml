@@ -6,13 +6,10 @@ global:
   imageRegistry: docker.io
   imagePullSecrets: []
   storageClass: "standard"
-
 # Namespace - TEST ENVIRONMENT
 namespace: restaurant-test
-
 # Image pull policy
 imagePullPolicy: Always
-
 # API Gateway
 apiGateway:
   enabled: true
@@ -46,7 +43,6 @@ apiGateway:
     maxReplicas: 3
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
-
 # Auth Service
 authService:
   enabled: true
@@ -72,7 +68,6 @@ authService:
     maxReplicas: 3
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
-
 # Restaurant Service
 restaurantService:
   enabled: true
@@ -98,7 +93,6 @@ restaurantService:
     maxReplicas: 3
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
-
 # Order Service (with ML Analytics + WebSocket)
 orderService:
   enabled: true
@@ -127,7 +121,6 @@ orderService:
     maxReplicas: 2
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
-
 # Customer Service
 customerService:
   enabled: true
@@ -153,7 +146,6 @@ customerService:
     maxReplicas: 3
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
-
 # Integration Service (Uber Eats Webhooks)
 integrationService:
   enabled: true
@@ -182,7 +174,6 @@ integrationService:
     maxReplicas: 5
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
-
 # Frontend
 frontend:
   enabled: true
@@ -190,7 +181,7 @@ frontend:
   replicaCount: 1
   image:
     repository: shadrach85/restaurant-frontend
-    tag: fresh
+    tag: c31dc0d
     pullPolicy: Always
   service:
     type: ClusterIP
@@ -208,7 +199,6 @@ frontend:
     maxReplicas: 3
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
-
 # PostgreSQL
 postgresql:
   enabled: true
@@ -233,7 +223,6 @@ postgresql:
     username: restaurant_admin
     password: restaurant_pass_2024
     database: restaurant_db
-
 # RabbitMQ
 rabbitmq:
   enabled: true
@@ -258,7 +247,6 @@ rabbitmq:
   auth:
     username: guest
     password: guest
-
 # Redis
 redis:
   enabled: true
@@ -279,7 +267,6 @@ redis:
     requests:
       cpu: 100m
       memory: 128Mi
-
 # Ingress - Disabled for test (use port-forward)
 ingress:
   enabled: false
@@ -302,13 +289,11 @@ ingress:
       hosts:
         - api.restaurant-test.local
         - restaurant-test.local
-
 # Secrets
 secrets:
   jwtSecretKey: "change-me-in-production"
   sessionSecret: "change-me-in-production"
   postgresPassword: "restaurant_pass_2024"
-
 # ConfigMap
 config:
   environment: "test"
@@ -316,7 +301,6 @@ config:
   jwtAlgorithm: "HS256"
   accessTokenExpireMinutes: "30"
   refreshTokenExpireDays: "7"
-
 # Persistence
 persistence:
   storageClass: "standard"

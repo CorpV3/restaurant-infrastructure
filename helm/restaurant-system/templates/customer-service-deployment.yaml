@@ -1,0 +1,101 @@
+{{- if .Values.customerService.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.customerService.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.customerService.name }}
+spec:
+  replicas: {{ .Values.customerService.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.customerService.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.customerService.name }}
+    spec:
+      containers:
+      - name: customer-service
+        image: "{{ .Values.customerService.image.repository }}:{{ .Values.customerService.image.tag }}"
+        imagePullPolicy: {{ .Values.customerService.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.customerService.service.port }}
+          name: http
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: restaurant-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: restaurant-secrets
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: restaurant-config
+              key: POSTGRES_DB
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: restaurant-config
+              key: DATABASE_URL
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: restaurant-config
+              key: REDIS_HOST
+        - name: RABBITMQ_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: restaurant-config
+              key: RABBITMQ_HOST
+        - name: RABBITMQ_USER
+          valueFrom:
+            secretKeyRef:
+              name: restaurant-secrets
+              key: RABBITMQ_USER
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: restaurant-secrets
+              key: RABBITMQ_PASSWORD
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: restaurant-secrets
+              key: JWT_SECRET_KEY
+        - name: SESSION_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: restaurant-secrets
+              key: SESSION_SECRET
+        - name: ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: restaurant-config
+              key: ENVIRONMENT
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: restaurant-config
+              key: LOG_LEVEL
+        resources:
+          {{- toYaml .Values.customerService.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+{{- end }}

@@ -1,0 +1,308 @@
+# Production values for restaurant-system Helm chart
+# These values override values.yaml for production environment
+
+# Global configuration
+global:
+  imageRegistry: docker.io
+  imagePullSecrets: []
+  storageClass: ""
+
+# Production namespace
+namespace: restaurant-prod
+
+# Image pull policy - use specific tags in production
+imagePullPolicy: IfNotPresent
+
+# API Gateway
+apiGateway:
+  enabled: true
+  name: api-gateway
+  replicaCount: 2  # Higher replica count for production
+  image:
+    repository: shadrach001/restaurant_management_api-gateway  # Update with your registry
+    tag: "REPLACE_WITH_VERSION"  # Will be replaced by deployment script
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8000
+  resources:
+    limits:
+      cpu: 1000m  # More resources for production
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  env:
+    AUTH_SERVICE_URL: "http://auth-service:8001"
+    RESTAURANT_SERVICE_URL: "http://restaurant-service:8003"
+    ORDER_SERVICE_URL: "http://order-service:8004"
+    CUSTOMER_SERVICE_URL: "http://customer-service:8005"
+    RATE_LIMIT_REQUESTS: "200"  # Higher limit for production
+    RATE_LIMIT_WINDOW: "60"
+  autoscaling:
+    enabled: true  # Enable autoscaling in production
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+# Auth Service
+authService:
+  enabled: true
+  name: auth-service
+  replicaCount: 2  # Higher replica count for production
+  image:
+    repository: shadrach001/restaurant_management_auth-service  # Update with your registry
+    tag: "REPLACE_WITH_VERSION"  # Will be replaced by deployment script
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8001
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+# Restaurant Service
+restaurantService:
+  enabled: true
+  name: restaurant-service
+  replicaCount: 2  # Higher replica count for production
+  image:
+    repository: shadrach001/restaurant_management_restaurant-service  # Update with your registry
+    tag: "REPLACE_WITH_VERSION"  # Will be replaced by deployment script
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8003
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+# Order Service (with ML Analytics - production resources)
+orderService:
+  enabled: true
+  name: order-service
+  replicaCount: 2
+  image:
+    repository: shadrach001/restaurant_management_order-service
+    tag: "REPLACE_WITH_VERSION"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8004
+  resources:
+    limits:
+      cpu: 2000m      # 2 CPU cores for production ML workloads
+      memory: 4Gi     # 4GB RAM for production
+    requests:
+      cpu: 1000m      # 1 CPU baseline
+      memory: 2Gi     # 2GB baseline
+  env:
+    ENABLE_ML_PREDICTIONS: "true"
+    ML_MAX_CONCURRENT_TRAININGS: "2"  # More concurrent trainings in production
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+# Customer Service
+customerService:
+  enabled: true
+  name: customer-service
+  replicaCount: 2
+  image:
+    repository: shadrach001/restaurant_management_customer-service
+    tag: "REPLACE_WITH_VERSION"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8007
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+# Frontend
+frontend:
+  enabled: true
+  name: frontend
+  replicaCount: 2  # Higher replica count for production
+  image:
+    repository: shadrach001/restaurant-frontend  # Update with your registry
+    tag: "REPLACE_WITH_VERSION"  # Will be replaced by deployment script
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+# PostgreSQL - Production configuration
+postgresql:
+  enabled: true
+  name: postgres
+  image:
+    repository: postgres
+    tag: "15-alpine"
+  service:
+    type: ClusterIP
+    port: 5432
+  persistence:
+    enabled: true
+    size: 50Gi  # Larger storage for production
+  resources:
+    limits:
+      cpu: 2000m  # More CPU for production database
+      memory: 4Gi  # More memory for production
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+  auth:
+    username: restaurant_admin
+    password: "REPLACE_WITH_SECURE_PASSWORD"  # Must be changed for production!
+    database: restaurant_db
+
+# RabbitMQ - Production configuration
+rabbitmq:
+  enabled: true
+  name: rabbitmq
+  image:
+    repository: rabbitmq
+    tag: "3.13-management-alpine"
+  service:
+    type: ClusterIP
+    port: 5672
+    managementPort: 15672
+  persistence:
+    enabled: true
+    size: 20Gi  # Larger storage for production
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  auth:
+    username: restaurant_admin
+    password: "REPLACE_WITH_SECURE_PASSWORD"  # Must be changed for production!
+
+# Redis - Production configuration
+redis:
+  enabled: true
+  name: redis
+  image:
+    repository: redis
+    tag: "7-alpine"
+  service:
+    type: ClusterIP
+    port: 6379
+  persistence:
+    enabled: true
+    size: 20Gi  # Larger storage for production
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+# Ingress configuration - Production
+ingress:
+  enabled: true  # Enable ingress in production
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: prod.corpv3.com  # REPLACE WITH YOUR PRODUCTION DOMAIN
+      paths:
+        - path: /api
+          pathType: Prefix
+          service: api-gateway
+        - path: /
+          pathType: Prefix
+          service: frontend
+  tls:
+    - secretName: restaurant-prod-tls
+      hosts:
+        - prod.corpv3.com  # REPLACE WITH YOUR PRODUCTION DOMAIN
+
+# Secrets - MUST BE CHANGED FOR PRODUCTION
+# These should be created separately using kubectl create secret
+# DO NOT commit actual production secrets to git!
+secrets:
+  jwtSecretKey: "REPLACE_WITH_PRODUCTION_SECRET"  # Generate with: openssl rand -hex 32
+  sessionSecret: "REPLACE_WITH_PRODUCTION_SECRET"  # Generate with: openssl rand -hex 32
+  postgresPassword: "REPLACE_WITH_PRODUCTION_SECRET"  # Generate with: openssl rand -base64 24
+
+# ConfigMap - Production settings
+config:
+  environment: "production"
+  logLevel: "INFO"  # Use INFO in production, DEBUG only for troubleshooting
+  jwtAlgorithm: "HS256"
+  accessTokenExpireMinutes: "30"
+  refreshTokenExpireDays: "7"
+
+# Persistence
+persistence:
+  storageClass: ""  # Use default storage class
+  accessMode: ReadWriteOnce
+
+# NOTES FOR PRODUCTION DEPLOYMENT:
+#
+# 1. BEFORE deploying, replace all "REPLACE_WITH_*" placeholders
+# 2. Generate secure passwords:
+#    - openssl rand -hex 32  # For JWT secrets
+#    - openssl rand -base64 24  # For database passwords
+# 3. Update image repositories to match your Docker Hub username
+# 4. Update production domain name
+# 5. Create secrets separately (not in this file):
+#    kubectl create secret generic jwt-secret \
+#      --from-literal=secret-key=$(openssl rand -hex 32) \
+#      -n restaurant-prod
+# 6. Adjust resource limits based on your production hardware
+# 7. Configure DNS to point to your production cluster

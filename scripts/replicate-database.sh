@@ -1,6 +1,6 @@
 #!/bin/bash
 # Database Replication Script
-# This script copies data from production (restaurant-system) to test (restaurant-test) namespace
+# Copies data from production (restaurant-system) to test (restaurant-test) namespace
 
 set -e
 
@@ -14,42 +14,51 @@ echo "=== Database Replication: $PROD_NAMESPACE -> $TEST_NAMESPACE ==="
 
 # Check if test namespace exists
 if ! kubectl get namespace $TEST_NAMESPACE &> /dev/null; then
-    echo "Creating test namespace..."
-    kubectl apply -f ../kubernetes/namespace.yaml
+    echo "Error: Test namespace $TEST_NAMESPACE does not exist."
+    echo "Run setup-test-namespace.sh first."
+    exit 1
 fi
 
-# Wait for test PostgreSQL to be ready
-echo "Waiting for test PostgreSQL to be ready..."
-kubectl wait --for=condition=ready pod/$TEST_POD -n $TEST_NAMESPACE --timeout=300s
+# Check if test PostgreSQL is ready
+echo "Checking test PostgreSQL..."
+kubectl wait --for=condition=ready pod/$TEST_POD -n $TEST_NAMESPACE --timeout=60s
 
-# Get production database credentials
+# Get database credentials from production
 PROD_USER=$(kubectl get secret restaurant-secrets -n $PROD_NAMESPACE -o jsonpath='{.data.POSTGRES_USER}' | base64 -d)
 PROD_PASS=$(kubectl get secret restaurant-secrets -n $PROD_NAMESPACE -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d)
 
+echo "Database user: $PROD_USER"
+echo ""
 echo "Replicating databases..."
 
 for DB in "${DATABASES[@]}"; do
-    echo "  Replicating $DB..."
+    echo "  [$DB] Dumping from production..."
 
-    # Dump from production
+    # Dump from production (schema + data)
     kubectl exec -n $PROD_NAMESPACE $PROD_POD -c postgres -- \
-        pg_dump -U $PROD_USER -d $DB --no-owner --no-acl > /tmp/${DB}_dump.sql
+        pg_dump -U $PROD_USER -d $DB --no-owner --no-acl --clean --if-exists 2>/dev/null > /tmp/${DB}_dump.sql
 
-    # Check if database exists in test, create if not
+    if [ ! -s /tmp/${DB}_dump.sql ]; then
+        echo "  [$DB] Warning: Empty dump, skipping..."
+        continue
+    fi
+
+    echo "  [$DB] Creating database in test if not exists..."
     kubectl exec -n $TEST_NAMESPACE $TEST_POD -c postgres -- \
         psql -U $PROD_USER -c "CREATE DATABASE $DB;" 2>/dev/null || true
 
-    # Restore to test
-    kubectl exec -n $TEST_NAMESPACE $TEST_POD -c postgres -- \
-        psql -U $PROD_USER -d $DB < /tmp/${DB}_dump.sql
+    echo "  [$DB] Restoring to test..."
+    kubectl exec -i -n $TEST_NAMESPACE $TEST_POD -c postgres -- \
+        psql -U $PROD_USER -d $DB < /tmp/${DB}_dump.sql 2>/dev/null
 
     # Cleanup
     rm -f /tmp/${DB}_dump.sql
 
-    echo "  ✓ $DB replicated"
+    echo "  [$DB] ✓ Done"
 done
 
 echo ""
 echo "=== Database replication complete ==="
-echo "Test namespace: $TEST_NAMESPACE"
-echo "Databases replicated: ${DATABASES[*]}"
+echo ""
+echo "Verify with:"
+echo "  kubectl exec -n $TEST_NAMESPACE $TEST_POD -c postgres -- psql -U $PROD_USER -c '\\l'"

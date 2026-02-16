@@ -1,41 +1,27 @@
+{{- if .Values.orderService.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: restaurant-service
-  namespace: restaurant-test
+  name: {{ .Values.orderService.name }}
+  namespace: {{ .Values.namespace }}
   labels:
-    app: restaurant-service
-    tier: backend
+    app: {{ .Values.orderService.name }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.orderService.replicaCount }}
   selector:
     matchLabels:
-      app: restaurant-service
+      app: {{ .Values.orderService.name }}
   template:
     metadata:
       labels:
-        app: restaurant-service
-        tier: backend
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8003"
-        prometheus.io/path: "/metrics"
+        app: {{ .Values.orderService.name }}
     spec:
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.io/hostname
-                operator: In
-                values:
-                - restaurant-cluster-worker
       containers:
-      - name: restaurant-service
-        image: shadrach85/restaurant-service:030708d
-        imagePullPolicy: Always
+      - name: order-service
+        image: "{{ .Values.orderService.image.repository }}:{{ .Values.orderService.image.tag }}"
+        imagePullPolicy: {{ .Values.orderService.image.pullPolicy }}
         ports:
-        - containerPort: 8003
+        - containerPort: {{ .Values.orderService.service.port }}
           name: http
         env:
         - name: POSTGRES_USER
@@ -68,6 +54,16 @@ spec:
             configMapKeyRef:
               name: restaurant-config
               key: RABBITMQ_HOST
+        - name: RABBITMQ_USER
+          valueFrom:
+            secretKeyRef:
+              name: restaurant-secrets
+              key: RABBITMQ_USER
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: restaurant-secrets
+              key: RABBITMQ_PASSWORD
         - name: JWT_SECRET_KEY
           valueFrom:
             secretKeyRef:
@@ -83,51 +79,28 @@ spec:
             configMapKeyRef:
               name: restaurant-config
               key: ENVIRONMENT
-        - name: QR_CODE_BASE_URL
+        - name: LOG_LEVEL
           valueFrom:
             configMapKeyRef:
               name: restaurant-config
-              key: QR_CODE_BASE_URL
-        volumeMounts:
-        - name: uploads
-          mountPath: /app/uploads
+              key: LOG_LEVEL
+        - name: RESTAURANT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: restaurant-config
+              key: RESTAURANT_SERVICE_URL
         resources:
-          requests:
-            memory: "256Mi"
-            cpu: "100m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
+          {{- toYaml .Values.orderService.resources | nindent 10 }}
         livenessProbe:
           httpGet:
             path: /health
-            port: 8003
+            port: http
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /health
-            port: 8003
+            port: http
           initialDelaySeconds: 10
           periodSeconds: 5
-      volumes:
-      - name: uploads
-        persistentVolumeClaim:
-          claimName: restaurant-uploads-pvc
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: restaurant-service
-  namespace: restaurant-test
-  labels:
-    app: restaurant-service
-spec:
-  type: ClusterIP
-  ports:
-    - port: 8003
-      targetPort: 8003
-      protocol: TCP
-      name: http
-  selector:
-    app: restaurant-service
+{{- end }}

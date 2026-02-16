@@ -1,64 +1,52 @@
 #!/bin/bash
-# Setup Test Namespace Script
-# Creates the restaurant-test namespace with all required resources
+# Setup Test Namespace with Helm
+# Deploys restaurant-system to restaurant-test namespace for testing
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-K8S_DIR="$SCRIPT_DIR/../kubernetes"
+HELM_DIR="$SCRIPT_DIR/../helm/restaurant-system"
+NAMESPACE="restaurant-test"
+RELEASE_NAME="restaurant-test"
 
-echo "=== Setting up restaurant-test namespace ==="
+echo "=== Setting up $NAMESPACE namespace with Helm ==="
 
-# 1. Create namespace
+# 1. Create namespace if not exists
 echo "1. Creating namespace..."
-kubectl apply -f $K8S_DIR/namespace.yaml
+kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
 
-# 2. Create secrets (copy from production or create new)
-echo "2. Creating secrets..."
-kubectl apply -f $K8S_DIR/secrets.yaml
-kubectl apply -f $K8S_DIR/integration-secrets.yaml
+# Label namespace for Istio injection (if using Istio)
+kubectl label namespace $NAMESPACE istio-injection=enabled --overwrite 2>/dev/null || true
 
-# 3. Create configmap
-echo "3. Creating configmap..."
-kubectl apply -f $K8S_DIR/configmap.yaml
+# 2. Deploy with Helm
+echo "2. Deploying with Helm..."
+helm upgrade --install $RELEASE_NAME $HELM_DIR \
+  --namespace $NAMESPACE \
+  --values $HELM_DIR/values-test.yaml \
+  --wait \
+  --timeout 10m
 
-# 4. Deploy infrastructure (PostgreSQL, RabbitMQ, Redis)
-echo "4. Deploying infrastructure..."
-kubectl apply -f $K8S_DIR/postgres-statefulset.yaml
-kubectl apply -f $K8S_DIR/rabbitmq-statefulset.yaml
-kubectl apply -f $K8S_DIR/redis-statefulset.yaml
+# 3. Wait for all pods to be ready
+echo "3. Waiting for pods to be ready..."
+kubectl wait --for=condition=ready pod -l app=postgres -n $NAMESPACE --timeout=300s || true
+kubectl wait --for=condition=ready pod -l app=rabbitmq -n $NAMESPACE --timeout=300s || true
+kubectl wait --for=condition=ready pod -l app=redis -n $NAMESPACE --timeout=300s || true
 
-# 5. Wait for infrastructure to be ready
-echo "5. Waiting for infrastructure..."
-kubectl wait --for=condition=ready pod/postgres-0 -n restaurant-test --timeout=300s
-kubectl wait --for=condition=ready pod/rabbitmq-0 -n restaurant-test --timeout=300s
-kubectl wait --for=condition=ready pod/redis-0 -n restaurant-test --timeout=300s
-
-# 6. Replicate database
-echo "6. Replicating database from production..."
-bash $SCRIPT_DIR/replicate-database.sh
-
-# 7. Deploy services
-echo "7. Deploying services..."
-kubectl apply -f $K8S_DIR/api-gateway-deployment.yaml
-kubectl apply -f $K8S_DIR/auth-service-deployment.yaml
-kubectl apply -f $K8S_DIR/restaurant-service-deployment.yaml
-kubectl apply -f $K8S_DIR/order-service-deployment.yaml
-kubectl apply -f $K8S_DIR/customer-service-deployment.yaml
-kubectl apply -f $K8S_DIR/integration-service-deployment.yaml
-kubectl apply -f $K8S_DIR/frontend-deployment.yaml
-
-# 8. Deploy ingress (if needed)
-echo "8. Setting up networking..."
-kubectl apply -f $K8S_DIR/ingress.yaml
+# 4. Show deployment status
+echo ""
+echo "=== Deployment Status ==="
+kubectl get pods -n $NAMESPACE
 
 echo ""
-echo "=== Setup complete ==="
-echo "Namespace: restaurant-test"
+echo "=== Setup Complete ==="
+echo "Namespace: $NAMESPACE"
+echo "Helm Release: $RELEASE_NAME"
 echo ""
-echo "Check pod status:"
-echo "  kubectl get pods -n restaurant-test"
+echo "Commands:"
+echo "  Check pods:      kubectl get pods -n $NAMESPACE"
+echo "  Check services:  kubectl get svc -n $NAMESPACE"
+echo "  View logs:       kubectl logs -f deploy/<service-name> -n $NAMESPACE"
 echo ""
 echo "Port-forward to test locally:"
-echo "  kubectl port-forward svc/frontend -n restaurant-test 3000:80"
-echo "  kubectl port-forward svc/api-gateway-service -n restaurant-test 8000:8000"
+echo "  Frontend:    kubectl port-forward svc/frontend -n $NAMESPACE 3000:80"
+echo "  API Gateway: kubectl port-forward svc/api-gateway-service -n $NAMESPACE 8000:8000"

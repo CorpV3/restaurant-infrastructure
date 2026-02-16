@@ -1,0 +1,18 @@
+{{- if .Values.restaurantService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.restaurantService.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "restaurant-system.restaurantService.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.restaurantService.service.type }}
+  ports:
+  - port: {{ .Values.restaurantService.service.port }}
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app: {{ .Values.restaurantService.name }}
+{{- end }}

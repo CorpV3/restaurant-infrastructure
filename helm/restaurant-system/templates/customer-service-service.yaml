@@ -1,0 +1,18 @@
+{{- if .Values.customerService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.customerService.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.customerService.name }}
+spec:
+  type: {{ .Values.customerService.service.type }}
+  ports:
+    - port: {{ .Values.customerService.service.port }}
+      targetPort: {{ .Values.customerService.service.port }}
+      protocol: TCP
+      name: http
+  selector:
+    app: {{ .Values.customerService.name }}
+{{- end }}

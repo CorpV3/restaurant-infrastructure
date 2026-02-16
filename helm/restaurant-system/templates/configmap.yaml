@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: restaurant-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "restaurant-system.labels" . | nindent 4 }}
+data:
+  # Environment
+  ENVIRONMENT: {{ .Values.config.environment | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  LOG_FORMAT: "json"
+
+  # Database Configuration
+  POSTGRES_HOST: "postgres-service"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: {{ .Values.postgresql.auth.database | quote }}
+  DATABASE_URL: "postgresql://{{ .Values.postgresql.auth.username }}:{{ .Values.postgresql.auth.password }}@postgres-service:5432/{{ .Values.postgresql.auth.database }}"
+
+  # Redis Configuration
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+
+  # RabbitMQ Configuration
+  RABBITMQ_HOST: "rabbitmq-service"
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_VHOST: "/"
+
+  # JWT Configuration
+  JWT_ALGORITHM: {{ .Values.config.jwtAlgorithm | quote }}
+  ACCESS_TOKEN_EXPIRE_MINUTES: {{ .Values.config.accessTokenExpireMinutes | quote }}
+  REFRESH_TOKEN_EXPIRE_DAYS: {{ .Values.config.refreshTokenExpireDays | quote }}
+
+  # Service URLs (for API Gateway)
+  AUTH_SERVICE_URL: "http://auth-service:8001"
+  RESTAURANT_SERVICE_URL: "http://restaurant-service:8003"
+  ORDER_SERVICE_URL: "http://order-service:8004"
+  CUSTOMER_SERVICE_URL: "http://customer-service:8007"
+  POS_SERVICE_URL: "http://pos-service:8006"
+
+  # Rate Limiting
+  RATE_LIMIT_REQUESTS: "100"
+  RATE_LIMIT_WINDOW: "60"
+  RATE_LIMIT_PER_MINUTE: "100"
+
+  # Service Ports
+  APP_AUTH_SERVICE_PORT: "8001"
+  APP_MASTER_ADMIN_SERVICE_PORT: "8002"
+  APP_RESTAURANT_SERVICE_PORT: "8003"
+  APP_ORDER_SERVICE_PORT: "8004"
+  APP_KITCHEN_SERVICE_PORT: "8005"
+  APP_NOTIFICATION_SERVICE_PORT: "8006"
+  APP_CUSTOMER_SERVICE_PORT: "8007"
+  APP_API_GATEWAY_PORT: "8000"
+
+  # CORS
+  CORS_ORIGINS: "http://localhost:3000,http://localhost:5173,https://restaurant.corpv3.com"
+
+  # File Upload
+  MAX_UPLOAD_SIZE: "5242880"
+  UPLOAD_DIR: "/uploads"
+
+  # QR Code Configuration
+  QR_CODE_BASE_URL: "https://restaurant.corpv3.com/table"
+  QR_CODE_SIZE: "300"
+  QR_CODE_ERROR_CORRECTION: "M"
+
+  # Session
+  SESSION_EXPIRE_HOURS: "24"

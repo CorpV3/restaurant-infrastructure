@@ -1,0 +1,81 @@
+{{- if .Values.apiGateway.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.apiGateway.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "restaurant-system.apiGateway.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.apiGateway.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.apiGateway.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.apiGateway.name }}
+        {{- include "restaurant-system.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- if .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: api-gateway
+        image: "{{ .Values.global.imageRegistry }}/{{ .Values.apiGateway.image.repository }}:{{ .Values.apiGateway.image.tag }}"
+        imagePullPolicy: {{ .Values.apiGateway.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.apiGateway.service.port }}
+          name: http
+          protocol: TCP
+        env:
+        - name: AUTH_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: restaurant-config
+              key: AUTH_SERVICE_URL
+        - name: RESTAURANT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: restaurant-config
+              key: RESTAURANT_SERVICE_URL
+        - name: POS_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: restaurant-config
+              key: POS_SERVICE_URL
+        - name: RATE_LIMIT_REQUESTS
+          valueFrom:
+            configMapKeyRef:
+              name: restaurant-config
+              key: RATE_LIMIT_REQUESTS
+        - name: RATE_LIMIT_WINDOW
+          valueFrom:
+            configMapKeyRef:
+              name: restaurant-config
+              key: RATE_LIMIT_WINDOW
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: restaurant-config
+              key: LOG_LEVEL
+        resources:
+          {{- toYaml .Values.apiGateway.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+{{- end }}

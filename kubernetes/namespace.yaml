@@ -1,9 +1,0 @@
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: restaurant-test
-  labels:
-    name: restaurant-test
-    environment: test
-    istio-injection: enabled

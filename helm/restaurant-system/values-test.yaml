@@ -1,0 +1,274 @@
+# Test environment values for restaurant-system
+# Deploy to restaurant-test namespace for testing before production migration
+
+# Namespace - TEST ENVIRONMENT
+namespace: restaurant-test
+
+# Global configuration
+global:
+  imageRegistry: docker.io
+  imagePullSecrets: []
+  storageClass: "standard"
+
+# Image pull policy
+imagePullPolicy: Always
+
+# API Gateway
+apiGateway:
+  enabled: true
+  name: api-gateway
+  replicaCount: 1
+  image:
+    repository: shadrach85/restaurant-api-gateway
+    tag: latest
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 8000
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+  env:
+    AUTH_SERVICE_URL: "http://auth-service:8001"
+    RESTAURANT_SERVICE_URL: "http://restaurant-service:8003"
+    ORDER_SERVICE_URL: "http://order-service:8004"
+    CUSTOMER_SERVICE_URL: "http://customer-service:8007"
+    INTEGRATION_SERVICE_URL: "http://integration-service:8015"
+  autoscaling:
+    enabled: false
+
+# Auth Service
+authService:
+  enabled: true
+  name: auth-service
+  replicaCount: 1
+  image:
+    repository: shadrach85/restaurant-auth-service
+    tag: latest
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 8001
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+  autoscaling:
+    enabled: false
+
+# Restaurant Service
+restaurantService:
+  enabled: true
+  name: restaurant-service
+  replicaCount: 1
+  image:
+    repository: shadrach85/restaurant-restaurant-service
+    tag: latest
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 8003
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+  autoscaling:
+    enabled: false
+
+# Order Service
+orderService:
+  enabled: true
+  name: order-service
+  replicaCount: 1
+  image:
+    repository: shadrach85/restaurant-order-service
+    tag: latest
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 8004
+  resources:
+    limits:
+      cpu: 1500m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  env:
+    ENABLE_ML_PREDICTIONS: "true"
+    ML_MAX_CONCURRENT_TRAININGS: "1"
+  autoscaling:
+    enabled: false
+
+# Customer Service
+customerService:
+  enabled: true
+  name: customer-service
+  replicaCount: 1
+  image:
+    repository: shadrach85/restaurant-customer-service
+    tag: latest
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 8007
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+  autoscaling:
+    enabled: false
+
+# Integration Service (Uber Eats Webhooks)
+integrationService:
+  enabled: true
+  name: integration-service
+  replicaCount: 1
+  image:
+    repository: shadrach85/restaurant-integration-service
+    tag: latest
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 8015
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  env:
+    ORDER_SERVICE_URL: "http://order-service:8004"
+    DEFAULT_RESTAURANT_ID: "6956017d-3aea-4ae2-9709-0ca0ac0a1a09"
+  autoscaling:
+    enabled: false
+
+# Frontend
+frontend:
+  enabled: true
+  name: frontend
+  replicaCount: 1
+  image:
+    repository: shadrach85/restaurant-frontend
+    tag: latest
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+  autoscaling:
+    enabled: false
+
+# PostgreSQL
+postgresql:
+  enabled: true
+  name: postgres
+  image:
+    repository: postgres
+    tag: "15-alpine"
+  service:
+    type: ClusterIP
+    port: 5432
+  persistence:
+    enabled: true
+    size: 10Gi
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  auth:
+    username: restaurant_admin
+    password: restaurant_pass_2024
+    database: restaurant_db
+
+# RabbitMQ
+rabbitmq:
+  enabled: true
+  name: rabbitmq
+  image:
+    repository: rabbitmq
+    tag: "3.13-management-alpine"
+  service:
+    type: ClusterIP
+    port: 5672
+    managementPort: 15672
+  persistence:
+    enabled: true
+    size: 5Gi
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+  auth:
+    username: guest
+    password: guest
+
+# Redis
+redis:
+  enabled: true
+  name: redis
+  image:
+    repository: redis
+    tag: "7-alpine"
+  service:
+    type: ClusterIP
+    port: 6379
+  persistence:
+    enabled: true
+    size: 5Gi
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Ingress - Disabled for test (use port-forward)
+ingress:
+  enabled: false
+
+# Secrets
+secrets:
+  jwtSecretKey: "test-jwt-secret-key-change-in-prod"
+  sessionSecret: "test-session-secret-change-in-prod"
+  postgresPassword: "restaurant_pass_2024"
+
+# ConfigMap
+config:
+  environment: "test"
+  logLevel: "DEBUG"
+  jwtAlgorithm: "HS256"
+  accessTokenExpireMinutes: "30"
+  refreshTokenExpireDays: "7"
+
+# Persistence
+persistence:
+  storageClass: "standard"
+  accessMode: ReadWriteOnce

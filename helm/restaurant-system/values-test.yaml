@@ -308,3 +308,6 @@ persistence:
 receiptService:
   image:
     tag: 04b92e9
+paymentService:
+  image:
+    tag: 175ce85

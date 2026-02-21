@@ -182,6 +182,58 @@ integrationService:
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
 
+# Payment Service (UK Payment Gateways - Stripe, SumUp)
+paymentService:
+  enabled: true
+  name: payment-service
+  replicaCount: 1
+  image:
+    repository: ghcr.io/corpv3/restaurant-payment-service
+    tag: latest
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 8010
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+# Receipt Service (Thermal Printer Support)
+receiptService:
+  enabled: true
+  name: receipt-service
+  replicaCount: 1
+  image:
+    repository: ghcr.io/corpv3/restaurant-receipt-service
+    tag: latest
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 8011
+  resources:
+    limits:
+      cpu: 300m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 2
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
 # Frontend
 frontend:
   enabled: true

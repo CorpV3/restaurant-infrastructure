@@ -1,0 +1,55 @@
+{{- if .Values.receiptService.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.receiptService.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.receiptService.name }}
+spec:
+  replicas: {{ .Values.receiptService.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.receiptService.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.receiptService.name }}
+    spec:
+      {{- if .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: receipt-service
+        image: "{{ .Values.global.imageRegistry }}/{{ .Values.receiptService.image.repository }}:{{ .Values.receiptService.image.tag }}"
+        imagePullPolicy: {{ .Values.receiptService.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.receiptService.service.port }}
+          name: http
+        env:
+        - name: ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: restaurant-config
+              key: ENVIRONMENT
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: restaurant-secrets
+              key: DATABASE_URL
+        resources:
+          {{- toYaml .Values.receiptService.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+{{- end }}

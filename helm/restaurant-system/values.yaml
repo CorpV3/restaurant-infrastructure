@@ -188,7 +188,7 @@ paymentService:
   name: payment-service
   replicaCount: 1
   image:
-    repository: ghcr.io/corpv3/restaurant-payment-service
+    repository: ghcr.io/shadrachdoc/restaurant-payment-service
     tag: latest
     pullPolicy: Always
   service:
@@ -214,7 +214,7 @@ receiptService:
   name: receipt-service
   replicaCount: 1
   image:
-    repository: ghcr.io/corpv3/restaurant-receipt-service
+    repository: ghcr.io/shadrachdoc/restaurant-receipt-service
     tag: latest
     pullPolicy: Always
   service:

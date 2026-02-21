@@ -20,8 +20,9 @@ apiGateway:
     tag: latest
     pullPolicy: Always
   service:
-    type: ClusterIP
+    type: NodePort
     port: 8000
+    nodePort: 30800
   resources:
     limits:
       cpu: 500m

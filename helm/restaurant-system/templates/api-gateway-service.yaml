@@ -13,6 +13,9 @@ spec:
     targetPort: http
     protocol: TCP
     name: http
+    {{- if .Values.apiGateway.service.nodePort }}
+    nodePort: {{ .Values.apiGateway.service.nodePort }}
+    {{- end }}
   selector:
     app: {{ .Values.apiGateway.name }}
 {{- end }}

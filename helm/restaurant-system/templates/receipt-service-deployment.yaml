@@ -22,7 +22,7 @@ spec:
       {{- end }}
       containers:
       - name: receipt-service
-        image: "{{ .Values.global.imageRegistry }}/{{ .Values.receiptService.image.repository }}:{{ .Values.receiptService.image.tag }}"
+        image: "{{ .Values.receiptService.image.repository }}:{{ .Values.receiptService.image.tag }}"
         imagePullPolicy: {{ .Values.receiptService.image.pullPolicy }}
         ports:
         - containerPort: {{ .Values.receiptService.service.port }}
@@ -35,8 +35,8 @@ spec:
               key: ENVIRONMENT
         - name: DATABASE_URL
           valueFrom:
-            secretKeyRef:
-              name: restaurant-secrets
+            configMapKeyRef:
+              name: restaurant-config
               key: DATABASE_URL
         resources:
           {{- toYaml .Values.receiptService.resources | nindent 10 }}

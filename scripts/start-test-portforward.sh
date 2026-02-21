@@ -106,6 +106,16 @@ restart_portforward() {
     echo "$new_pid"
 }
 
+echo -e "${YELLOW}Clearing any existing port-forwards on test ports...${NC}"
+for port in 9080 9000 9001 9003 9004 9007 9010 9011 9015 9432 9379 9672 19672; do
+    pid=$(lsof -ti :$port 2>/dev/null)
+    if [ -n "$pid" ]; then
+        kill "$pid" 2>/dev/null || true
+    fi
+done
+sleep 2s
+echo ""
+
 echo -e "${YELLOW}Starting port-forwards for TEST environment...${NC}"
 echo -e "${YELLOW}(Using ports 9xxx to avoid conflicts with production)${NC}"
 echo ""

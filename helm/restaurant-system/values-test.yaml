@@ -307,4 +307,4 @@ persistence:
   accessMode: ReadWriteOnce
 receiptService:
   image:
-    tag: e808f28
+    tag: 04b92e9

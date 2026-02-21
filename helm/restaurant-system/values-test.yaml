@@ -305,3 +305,6 @@ config:
 persistence:
   storageClass: "standard"
   accessMode: ReadWriteOnce
+receiptService:
+  image:
+    tag: e808f28

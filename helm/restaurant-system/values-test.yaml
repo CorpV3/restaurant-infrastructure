@@ -4,7 +4,6 @@
 # Cloudflare Tunnel - test environment (testenv.corpv3.com)
 cloudflare:
   tunnelToken: "eyJhIjoiOGY0YTA1Mzk0Y2NlZmEyYWY1NjMxNjM4NjBlM2E4MWIiLCJ0IjoiOWQ4MTI1ZjAtNTJlNi00NjliLWI3OTctZTNmODg3Y2YwMDhlIiwicyI6Ik1XVTVPV0V5T0RRdFpqZ3pZUzAwTXpJekxXSmhOR0V0TldJME5qYzFPR1l6WXpnMyJ9"
-
 # Global configuration
 global:
   imageRegistry: docker.io
@@ -80,7 +79,7 @@ restaurantService:
   replicaCount: 1
   image:
     repository: shadrach85/restaurant-service
-    tag: 030708d
+    tag: cbd028a
     pullPolicy: Always
   service:
     type: ClusterIP

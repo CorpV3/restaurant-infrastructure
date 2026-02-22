@@ -1,0 +1,16 @@
+{{- if and .Values.restaurantService.enabled .Values.restaurantService.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: restaurant-service-uploads
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.restaurantService.name }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ .Values.restaurantService.persistence.storageClass | default "standard" }}
+  resources:
+    requests:
+      storage: {{ .Values.restaurantService.persistence.size | default "5Gi" }}
+{{- end }}

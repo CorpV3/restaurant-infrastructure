@@ -95,6 +95,10 @@ restaurantService:
     requests:
       cpu: 200m
       memory: 256Mi
+  persistence:
+    enabled: true
+    storageClass: "standard"
+    size: "5Gi"
   autoscaling:
     enabled: false
     minReplicas: 1

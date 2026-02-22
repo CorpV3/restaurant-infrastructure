@@ -91,6 +91,11 @@ spec:
               key: QR_CODE_BASE_URL
         resources:
           {{- toYaml .Values.restaurantService.resources | nindent 10 }}
+        {{- if .Values.restaurantService.persistence.enabled }}
+        volumeMounts:
+        - name: uploads
+          mountPath: /app/uploads
+        {{- end }}
         livenessProbe:
           httpGet:
             path: /health
@@ -103,4 +108,10 @@ spec:
             port: http
           initialDelaySeconds: 10
           periodSeconds: 5
+      {{- if .Values.restaurantService.persistence.enabled }}
+      volumes:
+      - name: uploads
+        persistentVolumeClaim:
+          claimName: restaurant-service-uploads
+      {{- end }}
 {{- end }}

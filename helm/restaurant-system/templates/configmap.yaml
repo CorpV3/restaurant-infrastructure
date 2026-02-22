@@ -40,6 +40,7 @@ data:
   PAYMENT_SERVICE_URL: "http://payment-service:8010"
   RECEIPT_SERVICE_URL: "http://receipt-service:8011"
   INTEGRATION_SERVICE_URL: "http://integration-service:8015"
+  POS_SERVICE_URL: "http://pos-service:8020"
 
   # Rate Limiting
   RATE_LIMIT_REQUESTS: "100"

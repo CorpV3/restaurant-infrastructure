@@ -185,7 +185,7 @@ frontend:
   replicaCount: 1
   image:
     repository: shadrach85/restaurant-frontend
-    tag: 43ff799
+    tag: f5c5aac
     pullPolicy: Always
   service:
     type: ClusterIP

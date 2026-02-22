@@ -132,7 +132,7 @@ customerService:
   replicaCount: 1
   image:
     repository: shadrach85/customer-service
-    tag: latest
+    tag: 49d8a44
     pullPolicy: Always
   service:
     type: ClusterIP

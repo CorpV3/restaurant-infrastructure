@@ -104,7 +104,7 @@ orderService:
   replicaCount: 1
   image:
     repository: shadrach85/order-service
-    tag: 5da6b86
+    tag: 6801f7c
     pullPolicy: Always
   service:
     type: ClusterIP

@@ -157,7 +157,7 @@ integrationService:
   replicaCount: 2
   image:
     repository: shadrach85/integration-service
-    tag: v1.5
+    tag: "3185997"
     pullPolicy: Always
   service:
     type: ClusterIP

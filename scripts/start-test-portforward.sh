@@ -107,7 +107,7 @@ restart_portforward() {
 }
 
 echo -e "${YELLOW}Clearing any existing port-forwards on test ports...${NC}"
-for port in 9080 9000 9001 9003 9004 9007 9010 9011 9015 9432 9379 9672 19672; do
+for port in 9080 9000 9001 9003 9004 9007 9010 9011 9015 9432 9379 9672 19672 9088; do
     pid=$(lsof -ti :$port 2>/dev/null)
     if [ -n "$pid" ]; then
         kill "$pid" 2>/dev/null || true
@@ -138,6 +138,23 @@ echo -e "${CYAN}Infrastructure:${NC}"
 start_portforward "integration-service" "9015:8015"
 start_portforward "postgres-service" "9432:5432"
 start_portforward "redis-service" "9379:6379"
+
+echo ""
+echo -e "${CYAN}Management:${NC}"
+# ArgoCD is in its own namespace
+if kubectl get svc argocd-server -n argocd &> /dev/null; then
+    kubectl port-forward -n argocd svc/argocd-server 9088:80 > /dev/null 2>&1 &
+    ARGOCD_PID=$!
+    echo "$ARGOCD_PID" >> "$PID_FILE"
+    sleep 1
+    if kill -0 "$ARGOCD_PID" 2>/dev/null; then
+        echo -e "${GREEN}   ✅ argocd-server (9088:80)${NC}"
+    else
+        echo -e "${RED}   ❌ argocd-server failed to start${NC}"
+    fi
+else
+    echo -e "${YELLOW}   ⚠️  argocd-server not found, skipping${NC}"
+fi
 
 # RabbitMQ (two ports)
 if kubectl get svc rabbitmq-service -n restaurant-test &> /dev/null; then
@@ -170,6 +187,7 @@ echo -e "Integration Svc:    http://localhost:9015"
 echo -e "PostgreSQL:         localhost:9432"
 echo -e "Redis:              localhost:9379"
 echo -e "RabbitMQ Console:   http://localhost:19672 (guest/guest)"
+echo -e "ArgoCD:             http://localhost:9088  (admin / myq45CaeIZQNPgkA)"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
@@ -185,6 +203,7 @@ echo "   API Gateway:      9000 (test) vs 8000 (prod)"
 echo "   Payment Service:  9010 (test)"
 echo "   Receipt Service:  9011 (test)"
 echo "   PostgreSQL:       9432 (test) vs 5432 (prod)"
+echo "   ArgoCD:           9088 (management)"
 echo ""
 
 echo -e "${YELLOW}🖥️  POS Desktop App - set API URL to:${NC}"
@@ -254,6 +273,20 @@ while true; do
         else
             kubectl port-forward -n restaurant-test svc/rabbitmq-service $RABBITMQ_PF > /dev/null 2>&1 &
             SVC_PIDS["rabbitmq-service"]=$!
+            RUNNING=$((RUNNING + 1))
+            RESTARTED=$((RESTARTED + 1))
+        fi
+    fi
+
+    # ArgoCD
+    if kubectl get svc argocd-server -n argocd &> /dev/null; then
+        TOTAL=$((TOTAL + 1))
+        pid=${SVC_PIDS["argocd-server"]:-0}
+        if kill -0 "$pid" 2>/dev/null; then
+            RUNNING=$((RUNNING + 1))
+        else
+            kubectl port-forward -n argocd svc/argocd-server 9088:80 > /dev/null 2>&1 &
+            SVC_PIDS["argocd-server"]=$!
             RUNNING=$((RUNNING + 1))
             RESTARTED=$((RESTARTED + 1))
         fi

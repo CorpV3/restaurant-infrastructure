@@ -20,7 +20,7 @@ apiGateway:
   replicaCount: 1
   image:
     repository: shadrach85/api-gateway
-    tag: latest
+    tag: 05f4cb6
     pullPolicy: Always
   service:
     type: NodePort

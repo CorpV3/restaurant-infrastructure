@@ -79,7 +79,7 @@ restaurantService:
   replicaCount: 1
   image:
     repository: shadrach85/restaurant-service
-    tag: cbd028a
+    tag: c41dbb5
     pullPolicy: Always
   service:
     type: ClusterIP

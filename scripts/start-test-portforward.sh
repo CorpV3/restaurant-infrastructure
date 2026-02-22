@@ -30,10 +30,10 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM
 
-echo -e "${MAGENTA}╔═══════════════════════════════════════════════════╗${NC}"
-echo -e "${MAGENTA}║  Restaurant Management - TEST Environment        ║${NC}"
-echo -e "${MAGENTA}║  Namespace: restaurant-test                      ║${NC}"
-echo -e "${MAGENTA}╚═══════════════════════════════════════════════════╝${NC}"
+echo -e "${MAGENTA}╔═══════════════════════════════════════════════════════════╗${NC}"
+echo -e "${MAGENTA}║     Restaurant Management - TEST Environment              ║${NC}"
+echo -e "${MAGENTA}║     Namespace: restaurant-test                            ║${NC}"
+echo -e "${MAGENTA}╚═══════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
 # Check kubectl
@@ -56,58 +56,36 @@ fi
 
 rm -f "$PID_FILE"
 
-# Service definitions: "name localPort:remotePort label"
-declare -A SERVICES
-SERVICES=(
-    ["frontend"]="9080:80"
-    ["api-gateway"]="9000:8000"
-    ["auth-service"]="9001:8001"
-    ["restaurant-service"]="9003:8003"
-    ["order-service"]="9004:8004"
-    ["customer-service"]="9007:8007"
-    ["payment-service"]="9010:8010"
-    ["receipt-service"]="9011:8011"
-    ["integration-service"]="9015:8015"
-    ["postgres-service"]="9432:5432"
-    ["redis-service"]="9379:6379"
-)
 RABBITMQ_PF="19672:15672 9672:5672"
 
-start_portforward() {
-    local svc=$1
-    local ports=$2
-    if kubectl get svc "$svc" -n restaurant-test &> /dev/null; then
-        kubectl port-forward -n restaurant-test "svc/$svc" $ports > /dev/null 2>&1 &
+# Generic port-forward helper: start_pf <namespace> <svc> <ports> <label>
+start_pf() {
+    local ns=$1
+    local svc=$2
+    local ports=$3
+    local label=${4:-$svc}
+    if kubectl get svc "$svc" -n "$ns" &> /dev/null; then
+        kubectl port-forward -n "$ns" "svc/$svc" $ports > /dev/null 2>&1 &
         local pid=$!
         echo "$pid" >> "$PID_FILE"
         sleep 1
         if kill -0 "$pid" 2>/dev/null; then
-            echo -e "${GREEN}   ✅ $svc ($ports)${NC}"
+            echo -e "${GREEN}   ✅ $label ($ports)${NC}"
             return 0
         else
-            echo -e "${RED}   ❌ $svc failed to start${NC}"
+            echo -e "${RED}   ❌ $label failed to start${NC}"
             return 1
         fi
     else
-        echo -e "${YELLOW}   ⚠️  $svc not found, skipping${NC}"
+        echo -e "${YELLOW}   ⚠️  $label not found, skipping${NC}"
         return 1
     fi
 }
 
-restart_portforward() {
-    local svc=$1
-    local ports=$2
-    local old_pid=$3
-    # Remove old pid
-    grep -v "^${old_pid}$" "$PID_FILE" > "${PID_FILE}.tmp" && mv "${PID_FILE}.tmp" "$PID_FILE"
-    kubectl port-forward -n restaurant-test "svc/$svc" $ports > /dev/null 2>&1 &
-    local new_pid=$!
-    echo "$new_pid" >> "$PID_FILE"
-    echo "$new_pid"
-}
-
 echo -e "${YELLOW}Clearing any existing port-forwards on test ports...${NC}"
-for port in 9080 9000 9001 9003 9004 9007 9010 9011 9015 9432 9379 9672 19672 9088; do
+for port in 9080 9000 9001 9003 9004 9007 9010 9011 9015 \
+            9432 9379 9672 19672 \
+            9088 9300 9090 9093 9200 9686; do
     pid=$(lsof -ti :$port 2>/dev/null)
     if [ -n "$pid" ]; then
         kill "$pid" 2>/dev/null || true
@@ -120,41 +98,27 @@ echo -e "${YELLOW}Starting port-forwards for TEST environment...${NC}"
 echo -e "${YELLOW}(Using ports 9xxx to avoid conflicts with production)${NC}"
 echo ""
 
+# ── Core Application Services (restaurant-test) ──────────────────────────────
 echo -e "${CYAN}Core Services:${NC}"
-start_portforward "frontend" "9080:80"
-start_portforward "api-gateway" "9000:8000"
-start_portforward "auth-service" "9001:8001"
-start_portforward "restaurant-service" "9003:8003"
-start_portforward "order-service" "9004:8004"
-start_portforward "customer-service" "9007:8007"
+start_pf restaurant-test frontend            "9080:80"
+start_pf restaurant-test api-gateway         "9000:8000"
+start_pf restaurant-test auth-service        "9001:8001"
+start_pf restaurant-test restaurant-service  "9003:8003"
+start_pf restaurant-test order-service       "9004:8004"
+start_pf restaurant-test customer-service    "9007:8007"
 echo ""
 
+# ── POS Services (restaurant-test) ───────────────────────────────────────────
 echo -e "${CYAN}POS Services:${NC}"
-start_portforward "payment-service" "9010:8010"
-start_portforward "receipt-service" "9011:8011"
+start_pf restaurant-test payment-service     "9010:8010"
+start_pf restaurant-test receipt-service     "9011:8011"
 echo ""
 
+# ── Infrastructure (restaurant-test) ─────────────────────────────────────────
 echo -e "${CYAN}Infrastructure:${NC}"
-start_portforward "integration-service" "9015:8015"
-start_portforward "postgres-service" "9432:5432"
-start_portforward "redis-service" "9379:6379"
-
-echo ""
-echo -e "${CYAN}Management:${NC}"
-# ArgoCD is in its own namespace
-if kubectl get svc argocd-server -n argocd &> /dev/null; then
-    kubectl port-forward -n argocd svc/argocd-server 9088:80 > /dev/null 2>&1 &
-    ARGOCD_PID=$!
-    echo "$ARGOCD_PID" >> "$PID_FILE"
-    sleep 1
-    if kill -0 "$ARGOCD_PID" 2>/dev/null; then
-        echo -e "${GREEN}   ✅ argocd-server (9088:80)${NC}"
-    else
-        echo -e "${RED}   ❌ argocd-server failed to start${NC}"
-    fi
-else
-    echo -e "${YELLOW}   ⚠️  argocd-server not found, skipping${NC}"
-fi
+start_pf restaurant-test integration-service "9015:8015"
+start_pf restaurant-test postgres-service    "9432:5432"
+start_pf restaurant-test redis-service       "9379:6379"
 
 # RabbitMQ (two ports)
 if kubectl get svc rabbitmq-service -n restaurant-test &> /dev/null; then
@@ -167,56 +131,90 @@ else
 fi
 echo ""
 
-echo -e "${MAGENTA}╔═══════════════════════════════════════════════════╗${NC}"
-echo -e "${MAGENTA}║    TEST Environment Port-Forwards Running!        ║${NC}"
-echo -e "${MAGENTA}╚═══════════════════════════════════════════════════╝${NC}"
+# ── Monitoring & Observability (istio-system) ─────────────────────────────────
+echo -e "${CYAN}Monitoring & Observability:${NC}"
+start_pf istio-system grafana                "9300:80"         "Grafana"
+start_pf istio-system prometheus-server      "9090:80"         "Prometheus"
+start_pf istio-system prometheus-alertmanager "9093:9093"      "AlertManager"
+start_pf istio-system kiali                  "9200:20001"      "Kiali"
+start_pf istio-system jaeger-query           "9686:16686"      "Jaeger"
 echo ""
 
-echo -e "${CYAN}📊 TEST Environment Service URLs:${NC}"
-echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "Frontend:           http://localhost:9080"
-echo -e "API Gateway:        http://localhost:9000"
-echo -e "API Docs:           http://localhost:9000/docs"
-echo -e "Auth Service:       http://localhost:9001"
-echo -e "Restaurant Svc:     http://localhost:9003"
-echo -e "Order Service:      http://localhost:9004"
-echo -e "Customer Service:   http://localhost:9007"
-echo -e "Payment Service:    http://localhost:9010"
-echo -e "Receipt Service:    http://localhost:9011"
-echo -e "Integration Svc:    http://localhost:9015"
-echo -e "PostgreSQL:         localhost:9432"
-echo -e "Redis:              localhost:9379"
-echo -e "RabbitMQ Console:   http://localhost:19672 (guest/guest)"
-echo -e "ArgoCD:             http://localhost:9088  (admin / myq45CaeIZQNPgkA)"
-echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+# ── Management ────────────────────────────────────────────────────────────────
+echo -e "${CYAN}Management:${NC}"
+start_pf argocd argocd-server                "9088:80"         "ArgoCD"
 echo ""
 
-echo -e "${YELLOW}💡 Test Credentials:${NC}"
-echo "   Master Admin:      admin / password"
-echo "   Restaurant Admin:  adminres / password"
-echo "   Chef:              adminchef / password"
+# ─────────────────────────────────────────────────────────────────────────────
+echo -e "${MAGENTA}╔═══════════════════════════════════════════════════════════╗${NC}"
+echo -e "${MAGENTA}║       TEST Environment Port-Forwards Running!             ║${NC}"
+echo -e "${MAGENTA}╚═══════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-echo -e "${YELLOW}📌 Port Mapping (Test vs Production):${NC}"
-echo "   Frontend:         9080 (test) vs 3000 (prod)"
-echo "   API Gateway:      9000 (test) vs 8000 (prod)"
-echo "   Payment Service:  9010 (test)"
-echo "   Receipt Service:  9011 (test)"
-echo "   PostgreSQL:       9432 (test) vs 5432 (prod)"
-echo "   ArgoCD:           9088 (management)"
+echo -e "${CYAN}📊 Application URLs:${NC}"
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "  Frontend:           http://localhost:9080"
+echo -e "  API Gateway:        http://localhost:9000"
+echo -e "  API Docs:           http://localhost:9000/docs"
+echo -e "  Auth Service:       http://localhost:9001"
+echo -e "  Restaurant Svc:     http://localhost:9003"
+echo -e "  Order Service:      http://localhost:9004"
+echo -e "  Customer Service:   http://localhost:9007"
+echo -e "  Payment Service:    http://localhost:9010"
+echo -e "  Receipt Service:    http://localhost:9011"
+echo -e "  Integration Svc:    http://localhost:9015"
+echo ""
+echo -e "${CYAN}🗄️  Databases & Queues:${NC}"
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "  PostgreSQL:         localhost:9432"
+echo -e "  Redis:              localhost:9379"
+echo -e "  RabbitMQ AMQP:      localhost:9672"
+echo -e "  RabbitMQ Console:   http://localhost:19672"
+echo ""
+echo -e "${CYAN}📈 Monitoring & Observability:${NC}"
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "  Grafana:            http://localhost:9300"
+echo -e "  Prometheus:         http://localhost:9090"
+echo -e "  AlertManager:       http://localhost:9093"
+echo -e "  Kiali:              http://localhost:9200"
+echo -e "  Jaeger (Tracing):   http://localhost:9686"
+echo ""
+echo -e "${CYAN}⚙️  Management Tools:${NC}"
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "  ArgoCD:             http://localhost:9088"
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo ""
+
+echo -e "${YELLOW}🔑 Credentials:${NC}"
+echo -e "  ┌─────────────────────────────────────────────────────────┐"
+echo -e "  │  App (Master Admin)    admin         / password         │"
+echo -e "  │  App (Rest. Admin)     adminres      / password         │"
+echo -e "  │  App (Chef)            adminchef     / password         │"
+echo -e "  ├─────────────────────────────────────────────────────────┤"
+echo -e "  │  ArgoCD                admin         / myq45CaeIZQNPgkA │"
+echo -e "  │  Grafana               admin         / changeme123      │"
+echo -e "  │  RabbitMQ              guest         / guest            │"
+echo -e "  │  Prometheus            (no auth)                        │"
+echo -e "  │  Kiali                 (no auth)                        │"
+echo -e "  │  Jaeger                (no auth)                        │"
+echo -e "  │  Longhorn              (no auth)                        │"
+echo -e "  └─────────────────────────────────────────────────────────┘"
 echo ""
 
 echo -e "${YELLOW}🖥️  POS Desktop App - set API URL to:${NC}"
-echo "   http://localhost:9000  (from this machine)"
-echo "   http://$(hostname -I | awk '{print $1}'):9000  (from Windows over LAN)"
+echo "   http://localhost:9000            (from this machine)"
+echo "   http://$(hostname -I | awk '{print $1}'):9000   (from Windows over LAN)"
 echo ""
 
 echo -e "${MAGENTA}✨ TEST environment ready! Press CTRL+C to stop all port-forwards.${NC}"
 echo -e "${YELLOW}   (Auto-restarts any dropped port-forwards every 30s)${NC}"
 echo ""
 
-# Keep running - auto-restart any dropped port-forwards
-declare -A SVC_PORTS=(
+# ── Auto-restart loop ─────────────────────────────────────────────────────────
+declare -A SVC_PIDS
+
+# restaurant-test services
+declare -A TEST_SVCS=(
     ["frontend"]="9080:80"
     ["api-gateway"]="9000:8000"
     ["auth-service"]="9001:8001"
@@ -230,10 +228,24 @@ declare -A SVC_PORTS=(
     ["redis-service"]="9379:6379"
 )
 
-declare -A SVC_PIDS
-# Build initial pid-to-service map from PID_FILE
+# istio-system monitoring services
+declare -A ISTIO_SVCS=(
+    ["grafana"]="9300:80"
+    ["prometheus-server"]="9090:80"
+    ["prometheus-alertmanager"]="9093:9093"
+    ["kiali"]="9200:20001"
+    ["jaeger-query"]="9686:16686"
+)
+
+# Build initial PID map by reading PID_FILE in order of startup
 pid_index=0
-svc_order=("frontend" "api-gateway" "auth-service" "restaurant-service" "order-service" "customer-service" "payment-service" "receipt-service" "integration-service" "postgres-service" "redis-service" "rabbitmq-service")
+svc_order=(
+    "frontend" "api-gateway" "auth-service" "restaurant-service" "order-service"
+    "customer-service" "payment-service" "receipt-service" "integration-service"
+    "postgres-service" "redis-service" "rabbitmq-service"
+    "grafana" "prometheus-server" "prometheus-alertmanager" "kiali" "jaeger-query"
+    "argocd-server"
+)
 while IFS= read -r pid; do
     svc="${svc_order[$pid_index]}"
     SVC_PIDS[$svc]=$pid
@@ -246,18 +258,17 @@ while true; do
     TOTAL=0
     RESTARTED=0
 
-    for svc in "${!SVC_PORTS[@]}"; do
+    # restaurant-test services
+    for svc in "${!TEST_SVCS[@]}"; do
         if kubectl get svc "$svc" -n restaurant-test &> /dev/null; then
             TOTAL=$((TOTAL + 1))
             pid=${SVC_PIDS[$svc]:-0}
             if kill -0 "$pid" 2>/dev/null; then
                 RUNNING=$((RUNNING + 1))
             else
-                # Auto-restart
-                ports="${SVC_PORTS[$svc]}"
+                ports="${TEST_SVCS[$svc]}"
                 kubectl port-forward -n restaurant-test "svc/$svc" $ports > /dev/null 2>&1 &
-                new_pid=$!
-                SVC_PIDS[$svc]=$new_pid
+                SVC_PIDS[$svc]=$!
                 RUNNING=$((RUNNING + 1))
                 RESTARTED=$((RESTARTED + 1))
             fi
@@ -277,6 +288,23 @@ while true; do
             RESTARTED=$((RESTARTED + 1))
         fi
     fi
+
+    # istio-system monitoring
+    for svc in "${!ISTIO_SVCS[@]}"; do
+        if kubectl get svc "$svc" -n istio-system &> /dev/null; then
+            TOTAL=$((TOTAL + 1))
+            pid=${SVC_PIDS[$svc]:-0}
+            if kill -0 "$pid" 2>/dev/null; then
+                RUNNING=$((RUNNING + 1))
+            else
+                ports="${ISTIO_SVCS[$svc]}"
+                kubectl port-forward -n istio-system "svc/$svc" $ports > /dev/null 2>&1 &
+                SVC_PIDS[$svc]=$!
+                RUNNING=$((RUNNING + 1))
+                RESTARTED=$((RESTARTED + 1))
+            fi
+        fi
+    done
 
     # ArgoCD
     if kubectl get svc argocd-server -n argocd &> /dev/null; then

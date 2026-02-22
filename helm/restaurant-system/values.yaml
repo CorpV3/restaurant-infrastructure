@@ -1,5 +1,9 @@
 # Default values for restaurant-system
 
+# Cloudflare Tunnel
+cloudflare:
+  tunnelToken: "eyJhIjoiOGY0YTA1Mzk0Y2NlZmEyYWY1NjMxNjM4NjBlM2E4MWIiLCJ0IjoiMDE3Mjg4ZDktOGVlOC00YWJjLThlN2EtOTg5MWZjMmQ1NmZhIiwicyI6Ill6TTFaRFF5TW1NdE5tVTVaQzAwTWpOa0xXSTFOR1F0Wm1RMFlXUmhObUppTUdOaSJ9"
+
 # Global configuration
 global:
   imageRegistry: docker.io

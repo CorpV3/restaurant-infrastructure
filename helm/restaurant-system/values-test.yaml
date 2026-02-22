@@ -54,7 +54,7 @@ authService:
   replicaCount: 1
   image:
     repository: shadrach85/auth-service
-    tag: cd108b8
+    tag: 91f0988
     pullPolicy: Always
   service:
     type: ClusterIP

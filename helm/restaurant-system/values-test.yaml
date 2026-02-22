@@ -108,7 +108,7 @@ orderService:
   replicaCount: 1
   image:
     repository: shadrach85/order-service
-    tag: "8947818"
+    tag: "47a4379"
     pullPolicy: Always
   service:
     type: ClusterIP
@@ -189,7 +189,7 @@ frontend:
   replicaCount: 1
   image:
     repository: shadrach85/restaurant-frontend
-    tag: f5c5aac
+    tag: 6c4c309
     pullPolicy: Always
   service:
     type: ClusterIP
